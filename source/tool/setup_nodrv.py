@@ -27,6 +27,7 @@ Components for auxiliar tasks. Setup module for installing chipsec with distutil
 
 import os
 from setuptools import setup
+from setuptools import find_packages
 from distutils import dir_util
 
 tool_dir = os.path.dirname(os.path.abspath(__file__))
@@ -49,8 +50,11 @@ for current, dirs, files in os.walk(tool_dir ):
             pkg = pkg.replace(os.path.sep,'.')
             mypackages.append(pkg)
 
+packages = find_packages(exclude=['build']),
 print mypackages
+print packages
 
+print set(mypackages).difference(set(packages[0]))
 
 setup(
         name            = 'chipsec',
@@ -59,7 +63,11 @@ setup(
         author          = 'chipsec developers',
         author_email    = '',
         url             = 'https://github.com/chipsec/chipsec',
-
-        packages        = mypackages
-
+        include_package_data = True,
+        #packages        = mypackages
+        packages = find_packages(exclude=['build']),
+        package_data = {
+          '': ['*.xml']
+        },
+        #package_dir = {'':'chipsec'},   # tell distutils packages are under src
 )

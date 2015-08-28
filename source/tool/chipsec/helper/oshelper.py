@@ -91,13 +91,26 @@ class OsHelper:
         if chipsec.file.main_is_frozen():
             self.loadHelpersFromEXE()
         else:
-            self.loadHelpersFromFileSystem()
+            #self.loadHelpersFromFileSystem()
+            self.loadHelpersFromPkg()
 
     def loadHelpersFromEXE(self):
         import zipfile
         myzip = zipfile.ZipFile(os.path.join(chipsec.file.get_main_dir(),"library.zip"))
         helpers = map( map_modname_zip, filter(f_mod_zip, myzip.namelist()) )
         #print helpers
+        for h in helpers:
+            self.importModule(h)
+            if self.helper : break
+
+    def loadHelpersFromPkg(self):
+        import pkg_resources
+        helpers = []
+        helper_dirs = pkg_resources.resource_listdir('chipsec', 'helper')
+        for dir_name in helper_dirs:
+          if pkg_resources.resource_isdir('chipsec', 'helper/%s' % dir_name):
+            # Note we add helper stub here to let importModule work, it ignores it.
+            helpers.append('chipsec.helper.%s.helper_stub' % dir_name)
         for h in helpers:
             self.importModule(h)
             if self.helper : break
