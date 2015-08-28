@@ -36,6 +36,7 @@ __version__ = '1.0'
 
 import sys
 import collections
+import pkg_resources
 import os
 import fnmatch
 import re
@@ -299,23 +300,27 @@ class Chipset:
     ##################################################################################
 
     def init_xml_configuration( self ):
-        _cfg_path = os.path.join( chipsec.file.get_main_dir(), 'chipsec/cfg' )
+        common_xml = pkg_resources.resource_stream('chipsec', 'cfg/common.xml')
         # Load chipsec/cfg/common.xml configuration XML file common for all platforms if it exists
-        self.init_cfg_xml( os.path.join(_cfg_path,'common.xml'), self.code )
+        self.init_cfg_xml(common_xml, self.code )
         # Load chipsec/cfg/<code>.xml configuration XML file if it exists for platform <code>
         if self.code and '' != self.code:
-            self.init_cfg_xml( os.path.join(_cfg_path,('%s.xml'%self.code)), self.code )
-        # Load configuration from all other XML files recursively (if any)
-        for dirname, subdirs, xml_fnames in os.walk( _cfg_path ):
-            for _xml in xml_fnames:
-                if fnmatch.fnmatch( _xml, '*.xml' ) and not fnmatch.fnmatch( _xml, 'common.xml' ) and not (_xml in ['%s.xml' % c.lower() for c in Chipset_Code]):
-                    self.init_cfg_xml( os.path.join(dirname,_xml), self.code )
+            # Note that resource handles slash conversion internally, this is os independent
+            if pkg_resources.resource_exists('chipsec', 'cfg/%s.xml' % self.code):
+              code_xml = pkg_resources.resource_stream('chipsec', 'cfg/%s.xml' % self.code)
+              self.init_cfg_xml(code_xml, self.code )
+        # Load configuration from all other XML files (if any)
+        chipset_codes = ['%s.xml' % c.lower() for c in Chipset_Code]
+        for resource in pkg_resources.list_dir('chipsec', 'cfg'):
+          if (resource_name.endswith('.xml') and resource_name != 'common.xml' and
+              resource_name not in chipset_codes):
+            resource_xml = pkg_resources.resource_stream('chipsec', 'cfg/%s.xml' % resource_name)
+            self.init_cfg_xml(resource_xml, self.code)
         self.Cfg.XML_CONFIG_LOADED = True
 
 
     def init_cfg_xml(self, fxml, code):
         import xml.etree.ElementTree as ET
-        if not os.path.exists( fxml ): return
         if logger().VERBOSE: logger().log( "[*] looking for platform config in '%s'.." % fxml )
         tree = ET.parse( fxml )
         root = tree.getroot()
